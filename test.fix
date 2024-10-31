@@ -3,7 +3,7 @@ import HashMap;
 
 test : IO ();
 test = (
-    eval *test_basic;
+    test_basic;;
     pure()
 );
 
@@ -20,25 +20,25 @@ test_basic = (
                     // Do nothing for 6
                     .insert(7, -1).insert(7, 7);
 
-    eval *assert_eq(|_|"case 0", mp.find(0), Option::some(0));
-    eval *assert_eq(|_|"case 1", mp.find(1), Option::some(1));
-    eval *assert_eq(|_|"case 2", mp.find(2), Option::some(2));
-    eval *assert_eq(|_|"case 3", mp.find(3), Option::some(3));
-    eval *assert_eq(|_|"case 4", mp.find(4), Option::none());
-    eval *assert_eq(|_|"case 5", mp.find(5), Option::none());
-    eval *assert_eq(|_|"case 6", mp.find(6), Option::none());
-    eval *assert_eq(|_|"case 7", mp.find(7), Option::some(7));
+    assert_eq(|_|"case 0", mp.find(0), Option::some(0));;
+    assert_eq(|_|"case 1", mp.find(1), Option::some(1));;
+    assert_eq(|_|"case 2", mp.find(2), Option::some(2));;
+    assert_eq(|_|"case 3", mp.find(3), Option::some(3));;
+    assert_eq(|_|"case 4", mp.find(4), Option::none());;
+    assert_eq(|_|"case 5", mp.find(5), Option::none());;
+    assert_eq(|_|"case 6", mp.find(6), Option::none());;
+    assert_eq(|_|"case 7", mp.find(7), Option::some(7));;
 
-    eval *assert_eq(|_|"case 0.5", mp.contains_key(0), true);
-    eval *assert_eq(|_|"case 1.5", mp.contains_key(1), true);
-    eval *assert_eq(|_|"case 2.5", mp.contains_key(2), true);
-    eval *assert_eq(|_|"case 3.5", mp.contains_key(3), true);
-    eval *assert_eq(|_|"case 4.5", mp.contains_key(4), false);
-    eval *assert_eq(|_|"case 5.5", mp.contains_key(5), false);
-    eval *assert_eq(|_|"case 6.5", mp.contains_key(6), false);
-    eval *assert_eq(|_|"case 7.5", mp.contains_key(7), true);
+    assert_eq(|_|"case 0.5", mp.contains_key(0), true);;
+    assert_eq(|_|"case 1.5", mp.contains_key(1), true);;
+    assert_eq(|_|"case 2.5", mp.contains_key(2), true);;
+    assert_eq(|_|"case 3.5", mp.contains_key(3), true);;
+    assert_eq(|_|"case 4.5", mp.contains_key(4), false);;
+    assert_eq(|_|"case 5.5", mp.contains_key(5), false);;
+    assert_eq(|_|"case 6.5", mp.contains_key(6), false);;
+    assert_eq(|_|"case 7.5", mp.contains_key(7), true);;
 
-    eval *assert_eq(|_|"case size", mp.get_size, 5);
+    assert_eq(|_|"case size", mp.get_size, 5);;
 
     pure()
 );
