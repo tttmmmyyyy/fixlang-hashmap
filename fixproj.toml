@@ -1,6 +1,6 @@
 [general]
 name = "hashmap"
-version = "0.1.1"
+version = "1.0.0"
 
 [build]
 files = ["hashmap.fix"]
@@ -8,7 +8,8 @@ files = ["hashmap.fix"]
 [build.test]
 files = ["test.fix"]
 
+
 [[dependencies]]
 name = "hash"
-version = "0.1.0"
+version = "1.0.0"
 git = { url = "https://github.com/tttmmmyyyy/fixlang-hash.git" }
