@@ -67,37 +67,3 @@ Reserves a HashMap so that it will not rehash until size exceeds the spacified v
 ### `to_iter : HashMap::HashMap k v -> Std::Iterator (k, v)`
 
 Converts a HashMap into an iterator.
-
-## `namespace HashMap::HashMap`
-
-### `@_size : HashMap::HashMap k v -> Std::I64`
-
-Retrieves the field `_size` from a value of `HashMap`.
-
-### `@_table : HashMap::HashMap k v -> Std::Array (Std::Array (Std::Option (k, v)))`
-
-Retrieves the field `_table` from a value of `HashMap`.
-
-### `act__size : [f : Std::Functor] (Std::I64 -> f Std::I64) -> HashMap::HashMap k v -> f (HashMap::HashMap k v)`
-
-Updates a value of `HashMap` by applying a functorial action to field `_size`.
-
-### `act__table : [f : Std::Functor] (Std::Array (Std::Array (Std::Option (k, v))) -> f (Std::Array (Std::Array (Std::Option (k, v))))) -> HashMap::HashMap k v -> f (HashMap::HashMap k v)`
-
-Updates a value of `HashMap` by applying a functorial action to field `_table`.
-
-### `mod__size : (Std::I64 -> Std::I64) -> HashMap::HashMap k v -> HashMap::HashMap k v`
-
-Updates a value of `HashMap` by applying a function to field `_size`.
-
-### `mod__table : (Std::Array (Std::Array (Std::Option (k, v))) -> Std::Array (Std::Array (Std::Option (k, v)))) -> HashMap::HashMap k v -> HashMap::HashMap k v`
-
-Updates a value of `HashMap` by applying a function to field `_table`.
-
-### `set__size : Std::I64 -> HashMap::HashMap k v -> HashMap::HashMap k v`
-
-Updates a value of `HashMap` by setting field `_size` to a specified one.
-
-### `set__table : Std::Array (Std::Array (Std::Option (k, v))) -> HashMap::HashMap k v -> HashMap::HashMap k v`
-
-Updates a value of `HashMap` by setting field `_table` to a specified one.
