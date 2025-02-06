@@ -10,6 +10,8 @@
 
 #### field `_size : Std::I64`
 
+### `type HashMapIterator = Std::Iterator::FlattenIterator (Std::Iterator::MapIterator Std::Iterator::RangeIterator Std::I64 (Std::Iterator::FlattenIterator (Std::Iterator::MapIterator Std::Iterator::RangeIterator Std::I64 (Std::Option::OptionIterator (Std::Option kv))) (Std::Option::OptionIterator (Std::Option kv)))) (Std::Iterator::FlattenIterator (Std::Iterator::MapIterator Std::Iterator::RangeIterator Std::I64 (Std::Option::OptionIterator (Std::Option kv))) (Std::Option::OptionIterator (Std::Option kv)))`
+
 # Traits and aliases
 
 # Trait implementations
@@ -64,6 +66,6 @@ Inserts an element into a HashMap.
 
 Reserves a HashMap so that it will not rehash until size exceeds the spacified value.
 
-### `to_iter : HashMap::HashMap k v -> Std::Iterator (k, v)`
+### `to_iter : HashMap::HashMap k v -> HashMap::HashMapIterator (k, v)`
 
 Converts a HashMap into an iterator.
