@@ -40,5 +40,9 @@ test_basic = (
 
     assert_eq(|_|"case size", mp.get_size, 5);;
 
+    let kvs = mp.to_iter.to_array;
+    let kvs = kvs.sort_by(|(lhs, rhs)| lhs < rhs);
+    assert_eq(|_|"case to_iter", kvs.to_string, "[(0, 0), (1, 1), (2, 2), (3, 3), (7, 7)]");;
+
     pure()
 );

@@ -101,15 +101,17 @@ reserve : [k : HashKey] I64 -> HashMap k v -> HashMap k v;
 reserve = |max_size, mp| (
     if max_size <= mp.get_capacity { mp };
     let new_mp = HashMap::empty(max_size);
-    mp.to_iter.fold(new_mp, |new_mp, (k, v)| new_mp.insert(k, v))
+    mp.to_iter.fold(new_mp, |(k, v), new_mp| new_mp.insert(k, v))
 );
 
+type HashMapIterator kv = Std::Iterator::FlattenIterator (Std::Iterator::MapIterator Std::Iterator::RangeIterator Std::I64 (Std::Iterator::FlattenIterator (Std::Iterator::MapIterator Std::Iterator::RangeIterator Std::I64 (Std::Option::OptionIterator (Std::Option kv))) (Std::Option::OptionIterator (Std::Option kv)))) (Std::Iterator::FlattenIterator (Std::Iterator::MapIterator Std::Iterator::RangeIterator Std::I64 (Std::Option::OptionIterator (Std::Option kv))) (Std::Option::OptionIterator (Std::Option kv)));
+
 // Converts a HashMap into an iterator.
-to_iter : HashMap k v -> Iterator (k, v);
+to_iter : HashMap k v -> HashMapIterator (k, v);
 to_iter = |mp| (
-    let table_idx = *Iterator::range(0, mp.get_capacity);
-    let bucket_idx = *Iterator::range(0, mp.@_table.@(table_idx).get_size);
-    let opt_elem = mp.@_table.@(table_idx).@(bucket_idx);
-    if opt_elem.is_none { Iterator::empty };
-    pure $ opt_elem.as_some
+    Iterator::range(0, mp.get_capacity).flat_map(|table_idx| (
+        Iterator::range(0, mp.@_table.@(table_idx).get_size).flat_map(|bucket_idx| (
+            mp.@_table.@(table_idx).@(bucket_idx).to_iter
+        ))
+    ))
 );
