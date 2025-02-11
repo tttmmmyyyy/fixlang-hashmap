@@ -104,12 +104,14 @@ reserve = |max_size, mp| (
     mp.to_iter.fold(new_mp, |(k, v), new_mp| new_mp.insert(k, v))
 );
 
+type HashMapIterator kv = Std::Iterator::FlattenIterator (Std::Iterator::MapIterator Std::Iterator::RangeIterator Std::I64 (Std::Iterator::FlattenIterator (Std::Iterator::MapIterator Std::Iterator::RangeIterator Std::I64 (Std::Option::OptionIterator (Std::Option kv))) (Std::Option::OptionIterator (Std::Option kv)))) (Std::Iterator::FlattenIterator (Std::Iterator::MapIterator Std::Iterator::RangeIterator Std::I64 (Std::Option::OptionIterator (Std::Option kv))) (Std::Option::OptionIterator (Std::Option kv)));
+
 // Converts a HashMap into an iterator.
-to_iter : HashMap k v -> DynIterator (k, v);
+to_iter : HashMap k v -> HashMapIterator (k, v);
 to_iter = |mp| (
     Iterator::range(0, mp.get_capacity).flat_map(|table_idx| (
         Iterator::range(0, mp.@_table.@(table_idx).get_size).flat_map(|bucket_idx| (
             mp.@_table.@(table_idx).@(bucket_idx).to_iter
         ))
-    )).to_dyn
+    ))
 );
