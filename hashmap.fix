@@ -40,12 +40,12 @@ empty = |max_size| (
 erase : [k : HashKey] k -> HashMap k v -> HashMap k v;
 erase = |k, mp| (
     let (table_idx, opt_bucket_idx) = mp._find_place(k);
-    if opt_bucket_idx.is_some {
-        let bucket_idx = opt_bucket_idx.as_some;
-        let mp = mp.mod__table(Array::mod(table_idx, Array::set(bucket_idx, Option::none())));
-        mp.mod__size(Add::add(-1))
-    } else {
-        mp
+    match opt_bucket_idx {
+        some(bucket_idx) => (
+            let mp = mp.mod__table(Array::mod(table_idx, Array::set(bucket_idx, Option::none())));
+            mp.mod__size(Add::add(-1))
+        ),
+        none() => mp
     }
 );
 
@@ -53,12 +53,12 @@ erase = |k, mp| (
 find : [k : HashKey] k -> HashMap k v -> Option v;
 find = |k, mp| (
     let (table_idx, opt_bucket_idx) = mp._find_place(k);
-    if opt_bucket_idx.is_none {
-        Option::none()
-    } else {
-        let bucket_idx = opt_bucket_idx.as_some;
-        let v = mp.@_table.@(table_idx).@(bucket_idx).as_some.@1;
-        Option::some(v)
+    match opt_bucket_idx {
+        none() => Option::none(),
+        some(bucket_idx) => (
+            let v = mp.@_table.@(table_idx).@(bucket_idx).as_some.@1;
+            Option::some(v)
+        )
     }
 );
 
@@ -81,18 +81,20 @@ insert = |k, v, mp| (
     let cap = mp.get_capacity;
     let mp = if size < cap { mp } else { mp.reserve(size+1) };
     let (table_idx, opt_bucket_idx) = mp._find_place(k);
-    if opt_bucket_idx.is_some {
-        let bucket_idx = opt_bucket_idx.as_some;
-        mp.mod__table(Array::mod(table_idx, Array::set(bucket_idx, Option::some $ (k, v))))
-    } else {
-        let open_idx = mp.@_table.@(table_idx).find_by(Option::is_none);
-        let mp = if open_idx.is_some {
-            let open_idx = open_idx.as_some;
-            mp.mod__table(Array::mod(table_idx, Array::set(open_idx, Option::some $ (k, v))))
-        } else {
-            mp.mod__table(Array::mod(table_idx, Array::push_back(Option::some $ (k, v))))
-        };
-        mp.mod__size(Add::add(1))
+    match opt_bucket_idx {
+        some(bucket_idx) => (
+            mp.mod__table(Array::mod(table_idx, Array::set(bucket_idx, Option::some $ (k, v))))
+        ),
+        none() => (
+            let open_idx = mp.@_table.@(table_idx).find_by(Option::is_none);
+            let mp = if open_idx.is_some {
+                let open_idx = open_idx.as_some;
+                mp.mod__table(Array::mod(table_idx, Array::set(open_idx, Option::some $ (k, v))))
+            } else {
+                mp.mod__table(Array::mod(table_idx, Array::push_back(Option::some $ (k, v))))
+            };
+            mp.mod__size(Add::add(1))            
+        )
     }
 );
 
