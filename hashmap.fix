@@ -23,6 +23,10 @@ _get_pot_geq = |max_size| (
 );
 
 // Checks whether a hashmap contains a key.
+// 
+// # Parameters
+// - `k` : Key to search for.
+// - `mp` : HashMap to search in.
 contains_key : [k : HashKey] k -> HashMap k v -> Bool;
 contains_key = |k, mp| (
     let (_, opt_bucket_idx) = mp._find_place(k);
@@ -30,6 +34,9 @@ contains_key = |k, mp| (
 );
 
 // Creates an empty HashMap which is reserved so that it will not rehash until size exceeds the spacified value.
+// 
+// # Parameters
+// - `capacity` : Initial capacity of the HashMap.
 empty : I64 -> HashMap k v;
 empty = |max_size| (
     let cap = HashMap::_get_pot_geq(max_size);
@@ -37,6 +44,10 @@ empty = |max_size| (
 );
 
 // Erases an element from a HashMap.
+// 
+// # Parameters
+// - `k` : Key of the element to erase.
+// - `mp` : HashMap to erase from.
 erase : [k : HashKey] k -> HashMap k v -> HashMap k v;
 erase = |k, mp| (
     let (table_idx, opt_bucket_idx) = mp._find_place(k);
@@ -50,6 +61,10 @@ erase = |k, mp| (
 );
 
 // Finds an element from a HashMap.
+// 
+// # Parameters
+// - `k` : Key to search for.
+// - `mp` : HashMap to search in.
 find : [k : HashKey] k -> HashMap k v -> Option v;
 find = |k, mp| (
     let (table_idx, opt_bucket_idx) = mp._find_place(k);
@@ -63,18 +78,34 @@ find = |k, mp| (
 );
 
 // Finds an element from a HashMap. If the map doesn't contain the key, it returns the given default value.
+// 
+// # Parameters
+// - `k` : Key to search for.
+// - `def` : Default value to return if the key is not found.
+// - `mp` : HashMap to search in.
 find_or : [k : HashKey] k -> v -> HashMap k v -> v;
 find_or = |key, def, mp| mp.find(key).as_some_or(def);
 
 // Gets capacity of a HashMap. 
+// 
+// # Parameters
+// - `mp` : HashMap to get capacity of.
 get_capacity : HashMap k v -> I64;
 get_capacity = |mp| mp.@_table.get_size;
 
 // Gets size (number of elements) of a HashMap.
+// 
+// # Parameters
+// - `mp` : HashMap to get size of.
 get_size : HashMap k v -> I64;
 get_size = |mp| mp.@_size;
 
 // Inserts an element into a HashMap.
+// 
+// # Parameters
+// - `k` : Key of the element to insert.
+// - `v` : Value of the element to insert.
+// - `mp` : HashMap to insert into.
 insert : [k : HashKey] k -> v -> HashMap k v -> HashMap k v;
 insert = |k, v, mp| (
     let size = mp.get_size;
@@ -99,6 +130,10 @@ insert = |k, v, mp| (
 );
 
 // Reserves a HashMap so that it will not rehash until size exceeds the spacified value.
+// 
+// # Parameters
+// - `capacity` : Capacity to reserve.
+// - `mp` : HashMap to reserve.
 reserve : [k : HashKey] I64 -> HashMap k v -> HashMap k v;
 reserve = |max_size, mp| (
     if max_size <= mp.get_capacity { mp };
@@ -109,6 +144,9 @@ reserve = |max_size, mp| (
 type HashMapIterator kv = Std::Iterator::FlattenIterator (Std::Iterator::MapIterator Std::Iterator::RangeIterator Std::I64 (Std::Iterator::FlattenIterator (Std::Iterator::MapIterator Std::Iterator::RangeIterator Std::I64 (Std::Option::OptionIterator (Std::Option kv))) (Std::Option::OptionIterator (Std::Option kv)))) (Std::Iterator::FlattenIterator (Std::Iterator::MapIterator Std::Iterator::RangeIterator Std::I64 (Std::Option::OptionIterator (Std::Option kv))) (Std::Option::OptionIterator (Std::Option kv)));
 
 // Converts a HashMap into an iterator.
+// 
+// # Parameters
+// - `mp` : HashMap to convert to an iterator.
 to_iter : HashMap k v -> HashMapIterator (k, v);
 to_iter = |mp| (
     Iterator::range(0, mp.get_capacity).flat_map(|table_idx| (
