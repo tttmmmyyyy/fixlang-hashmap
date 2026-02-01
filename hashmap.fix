@@ -1,6 +1,14 @@
 module HashMap;
 
-import Hash;
+import Hash::{HashKey, Hash::hash};
+import Std::{
+    loop, Array, Bool, I64, Option, Add::add, 
+    Array::{empty, fill, find_by, get_size, mod, push_back, set, @}, I64::to_U64, 
+    Iterator::{flat_map, fold, range, FlattenIterator, MapIterator, RangeIterator}, 
+    LoopState::{break, continue}, 
+    Option::{as_some, as_some_or, is_none, is_some, none, some, to_iter, OptionIterator}, 
+    Tuple2::{@0, @1}, U64::to_I64
+};
 
 type HashMap k v = unbox struct { _table : Array (Array (Option (k, v))), _size : I64 };
 
