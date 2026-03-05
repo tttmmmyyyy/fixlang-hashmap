@@ -94,19 +94,42 @@ find = |k, mp| (
 find_or : [k : HashKey] k -> v -> HashMap k v -> v;
 find_or = |key, def, mp| mp.find(key).as_some_or(def);
 
-// Gets capacity of a HashMap. 
+// Gets capacity of a HashMap.
+//
+// # Parameters
+// - `mp` : HashMap to get capacity of.
+@capacity : HashMap k v -> I64;
+@capacity = |mp| mp.@_table.get_size;
+
+// Gets size (number of elements) of a HashMap.
+//
+// # Parameters
+// - `mp` : HashMap to get size of.
+@size : HashMap k v -> I64;
+@size = |mp| mp.@_size;
+
+// (Deprecated) Renamed `HashMap::get_capacity` to `HashMap::@capacity` for brevity.
 // 
+// The old name `HashMap::get_capacity` is now deprecated but will remain available
+// for the foreseeable future to maintain backward compatibility.
+//
+// Gets capacity of a HashMap.
+//
 // # Parameters
 // - `mp` : HashMap to get capacity of.
 get_capacity : HashMap k v -> I64;
-get_capacity = |mp| mp.@_table.get_size;
+get_capacity = @capacity;
 
-// Gets size (number of elements) of a HashMap.
+// (Deprecated) Renamed `HashMap::get_size` to `HashMap::@size` for brevity.
+// The old name `HashMap::get_size` is now deprecated but will remain available
+// for the foreseeable future to maintain backward compatibility.
 // 
+// Gets size (number of elements) of a HashMap.
+//
 // # Parameters
 // - `mp` : HashMap to get size of.
 get_size : HashMap k v -> I64;
-get_size = |mp| mp.@_size;
+get_size = @size;
 
 // Inserts an element into a HashMap.
 // 
