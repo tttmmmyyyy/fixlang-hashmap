@@ -1,6 +1,6 @@
 module Test;
 
-import HashMap::{contains_key, empty, erase, find, get_size, insert, to_iter};
+import HashMap::{contains_key, empty, erase, find, @size, insert, to_iter};
 import Std::{
     IO, Array::sort_by, Debug::assert_eq, Iterator::to_array, Monad::pure, Option::{none, some}, 
     ToString::to_string
@@ -42,7 +42,7 @@ test_basic = (
     assert_eq(|_|"case 6.5", mp.contains_key(6), false);;
     assert_eq(|_|"case 7.5", mp.contains_key(7), true);;
 
-    assert_eq(|_|"case size", mp.get_size, 5);;
+    assert_eq(|_|"case size", mp.@size, 5);;
 
     let kvs = mp.to_iter.to_array;
     let kvs = kvs.sort_by(|(lhs, rhs)| lhs < rhs);
