@@ -1,10 +1,11 @@
 module Test;
 
-import HashMap::{contains_key, empty, erase, find, @size, insert, to_iter};
+import HashMap::{contains_key, empty, erase, find, insert, to_iter, @size};
 import Std::{
     IO, Array::sort_by, Debug::assert_eq, Iterator::to_array, Monad::pure, Option::{none, some}, 
     ToString::to_string
 };
+
 test : IO ();
 test = (
     test_basic;;
