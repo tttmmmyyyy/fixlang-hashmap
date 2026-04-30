@@ -1,10 +1,30 @@
 # HashMap
 
-Defined in hashmap@1.1.3
+Defined in hashmap@2.0.1
 
 ## Values
 
 ### namespace HashMap
+
+#### @capacity
+
+Type: `HashMap::HashMap k v -> Std::I64`
+
+Gets capacity of a HashMap.
+
+##### Parameters
+
+- `mp` : HashMap to get capacity of.
+
+#### @size
+
+Type: `HashMap::HashMap k v -> Std::I64`
+
+Gets size (number of elements) of a HashMap.
+
+##### Parameters
+
+- `mp` : HashMap to get size of.
 
 #### contains_key
 
@@ -65,6 +85,11 @@ Finds an element from a HashMap. If the map doesn't contain the key, it returns 
 
 Type: `HashMap::HashMap k v -> Std::I64`
 
+(Deprecated) Renamed `HashMap::get_capacity` to `HashMap::@capacity` for brevity.
+
+The old name `HashMap::get_capacity` is now deprecated but will remain available
+for the foreseeable future to maintain backward compatibility.
+
 Gets capacity of a HashMap.
 
 ##### Parameters
@@ -74,6 +99,10 @@ Gets capacity of a HashMap.
 #### get_size
 
 Type: `HashMap::HashMap k v -> Std::I64`
+
+(Deprecated) Renamed `HashMap::get_size` to `HashMap::@size` for brevity.
+The old name `HashMap::get_size` is now deprecated but will remain available
+for the foreseeable future to maintain backward compatibility.
 
 Gets size (number of elements) of a HashMap.
 
@@ -106,7 +135,7 @@ Reserves a HashMap so that it will not rehash until size exceeds the spacified v
 
 #### to_iter
 
-Type: `HashMap::HashMap k v -> HashMap::HashMapIterator (k, v)`
+Type: `[?it : Std::Iterator, Std::Iterator::Item ?it = (k, v)] HashMap::HashMap k v -> ?it`
 
 Converts a HashMap into an iterator.
 
@@ -121,18 +150,6 @@ Converts a HashMap into an iterator.
 #### HashMap
 
 Defined as: `type HashMap k v = unbox struct { ...fields... }`
-
-##### field `_table`
-
-Type: `Std::Array (Std::Array (Std::Option (k, v)))`
-
-##### field `_size`
-
-Type: `Std::I64`
-
-#### HashMapIterator
-
-Defined as: `type HashMapIterator kv = Std::Iterator::FlattenIterator (Std::Iterator::MapIterator Std::Iterator::RangeIterator Std::I64 (Std::Iterator::FlattenIterator (Std::Iterator::MapIterator Std::Iterator::RangeIterator Std::I64 (Std::Option::OptionIterator (Std::Option kv))) (Std::Option::OptionIterator (Std::Option kv)))) (Std::Iterator::FlattenIterator (Std::Iterator::MapIterator Std::Iterator::RangeIterator Std::I64 (Std::Option::OptionIterator (Std::Option kv))) (Std::Option::OptionIterator (Std::Option kv)))`
 
 ## Traits and aliases
 

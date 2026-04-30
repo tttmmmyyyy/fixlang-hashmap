@@ -2,10 +2,10 @@ module HashMap;
 
 import Hash::{HashKey, Hash::hash};
 import Std::{
-    loop, Array, Bool, I64, Iterator, Option, Add::add, 
-    Array::{empty, fill, find_by, get_size, mod, push_back, set, @}, I64::to_U64, 
-    Iterator::{flat_map, fold, range, Item}, LoopState::{break, continue}, 
-    Option::{as_some, as_some_or, is_none, is_some, none, some, to_iter}, Tuple2::{@0, @1}, U64::to_I64
+    loop, Array, Bool, I64, Iterator, Option, Add::add,
+    Array::{empty, fill, find_by, mod, push_back, set, @, @size}, ToI64::i64, ToU64::u64,
+    Iterator::{flat_map, fold, range, Item}, LoopState::{break, continue},
+    Option::{as_some, as_some_or, is_none, is_some, none, some, to_iter}, Tuple2::{@0, @1}
 };
 
 type HashMap k v = unbox struct { _table : Array (Array (Option (k, v))), _size : I64 };
@@ -16,7 +16,7 @@ _find_place : [k : HashKey] k -> HashMap k v -> (I64, Option I64);
 _find_place = |k, mp| (
     let cap = mp.get_capacity;
     if cap == 0 { (-1, Option::none()) };
-    let table_idx = (k.hash % cap.to_U64).to_I64;
+    let table_idx = (k.hash % cap.u64).i64;
     let opt_bucket_idx = mp.@_table.@(table_idx).find_by(|opt_kv| opt_kv.is_some && opt_kv.as_some.@0 == k);
     (table_idx, opt_bucket_idx)
 );
@@ -97,7 +97,7 @@ find_or = |key, def, mp| mp.find(key).as_some_or(def);
 // # Parameters
 // - `mp` : HashMap to get capacity of.
 @capacity : HashMap k v -> I64;
-@capacity = |mp| mp.@_table.get_size;
+@capacity = |mp| mp.@_table.@size;
 
 // Gets size (number of elements) of a HashMap.
 //
@@ -177,7 +177,7 @@ reserve = |max_size, mp| (
 to_iter : [?it : Iterator, Item ?it = (k, v)] HashMap k v -> ?it;
 to_iter = |mp| (
     Iterator::range(0, mp.get_capacity).flat_map(|table_idx| (
-        Iterator::range(0, mp.@_table.@(table_idx).get_size).flat_map(|bucket_idx| (
+        Iterator::range(0, mp.@_table.@(table_idx).@size).flat_map(|bucket_idx| (
             mp.@_table.@(table_idx).@(bucket_idx).to_iter
         ))
     ))
