@@ -1,17 +1,33 @@
 module Test;
 
-import HashMap::{contains_key, empty, erase, find, insert, to_iter, @size};
+import Hash::Hash;
+import HashMap::{
+    contains_key, empty, erase, find, find_or, get_capacity, get_size, insert, reserve, to_iter, 
+    HashMap, @capacity, @size
+};
 import Std::{
-    IO, Array::sort_by, Debug::assert_eq, Iterator::to_array, Monad::pure, Option::{none, some}, 
-    ToString::to_string
+    Array, Bool, Eq, I64, IO, Option, String, U64, Array::{empty, find_by, push_back, set, sort_by, to_iter, @, @size},
+    Debug::assert_eq, Iterator::{filter, fold, range, to_array}, Monad::pure, 
+    Functor::map, Option::{none, some}, ToI64::i64, ToString::to_string, ToU64::u64, Tuple2::{@0, @1}, 
+    U64::{bit_and, bit_xor, shift_left, shift_right}
 };
 
+// Runs every test in this file.
 test : IO ();
 test = (
     test_basic;;
+    test_empty_map;;
+    test_against_reference;;
+    test_erase_keeps_keys_reachable;;
+    test_colliding_hashes;;
+    test_capacity;;
+    test_reserve;;
+    test_find_or_and_deprecated_names;;
     pure()
 );
 
+// Insertions, erasures and lookups on a small map, including a key overwritten by a later
+// insertion, a key erased and inserted again, and keys the map never held.
 test_basic : IO ();
 test_basic = (
     let mp = HashMap::empty(0)
@@ -45,9 +61,198 @@ test_basic = (
 
     assert_eq(|_|"case size", mp.@size, 5);;
 
-    let kvs = mp.to_iter.to_array;
+    let kvs = mp.HashMap::to_iter.to_array;
     let kvs = kvs.sort_by(|(lhs, rhs)| lhs < rhs);
     assert_eq(|_|"case to_iter", kvs.to_string, "[(0, 0), (1, 1), (2, 2), (3, 3), (7, 7)]");;
 
+    pure()
+);
+
+// Asserts that a check holds at every index of a range, naming the indices where it fails.
+//
+// # Parameters
+// - `msg` : Name of the case.
+// - `count` : Number of indices to check, counting from zero.
+// - `holds` : Check to run at each index.
+_assert_all : String -> I64 -> (I64 -> Bool) -> IO ();
+_assert_all = |msg, count, holds| (
+    let failing = range(0, count).filter(|i| !holds(i)).to_array;
+    assert_eq(|_|msg + ", failing at " + failing.to_string, failing.@size, 0)
+);
+
+// Advances a xorshift pseudo-random sequence by one step.
+//
+// # Parameters
+// - `x` : Current state of the sequence, which is nonzero.
+_next : U64 -> U64;
+_next = |x| (
+    let x = x.bit_xor(x.shift_left(13_U64));
+    let x = x.bit_xor(x.shift_right(7_U64));
+    x.bit_xor(x.shift_left(17_U64))
+);
+
+// Stores a value under a key in the reference map, an array of pairs holding one pair per key,
+// replacing the value the key already carries.
+//
+// # Parameters
+// - `k` : Key to store under.
+// - `v` : Value to store.
+// - `reference` : Reference map to store into.
+_reference_insert : I64 -> I64 -> Array (I64, I64) -> Array (I64, I64);
+_reference_insert = |k, v, reference| (
+    match reference.find_by(|kv| kv.@0 == k) {
+        some(i) => reference.set(i, (k, v)),
+        none() => reference.push_back((k, v))
+    }
+);
+
+// Drops the pair a key carries from the reference map.
+//
+// # Parameters
+// - `k` : Key to drop.
+// - `reference` : Reference map to drop from.
+_reference_erase : I64 -> Array (I64, I64) -> Array (I64, I64);
+_reference_erase = |k, reference| reference.Array::to_iter.filter(|kv| kv.@0 != k).to_array;
+
+// The value a key carries in the reference map.
+//
+// # Parameters
+// - `k` : Key to search for.
+// - `reference` : Reference map to search in.
+_reference_find : I64 -> Array (I64, I64) -> Option I64;
+_reference_find = |k, reference| reference.find_by(|kv| kv.@0 == k).map(|i| reference.@(i).@1);
+
+// Runs a mixed stream of insertions, updates and deletions through both a HashMap and an array of
+// pairs holding the same map, and asks both for every key.
+test_against_reference : IO ();
+test_against_reference = (
+    // The keys come from a range small enough that keys land on one another over and over.
+    let key_count = 256;
+    let (mp, reference, _) = range(0, 4000).fold(
+        (HashMap::empty(0), Array::empty(0), 12345_U64), |step, (mp, reference, rng)|
+        let rng = _next(rng);
+        let k = rng.bit_and(key_count.u64 - 1_U64).i64;
+        let rng = _next(rng);
+        if rng.bit_and(3_U64) == 0_U64 {
+            (mp.erase(k), reference._reference_erase(k), rng)
+        };
+        (mp.insert(k, step), reference._reference_insert(k, step), rng)
+    );
+    assert_eq(|_|"size", mp.@size, reference.@size);;
+    _assert_all("every key reads the same", key_count, |k|
+        mp.find(k) == reference._reference_find(k)
+    );;
+    let listed = mp.HashMap::to_iter.to_array.sort_by(|(lhs, rhs)| lhs.@0 < rhs.@0);
+    let expected = reference.sort_by(|(lhs, rhs)| lhs.@0 < rhs.@0);
+    assert_eq(|_|"to_iter lists the entries", listed, expected);;
+    pure()
+);
+
+// Erasing a key another key was stored past has to leave that other key where a search finds it.
+test_erase_keeps_keys_reachable : IO ();
+test_erase_keeps_keys_reachable = (
+    let count = 200;
+    let mp = range(0, count).fold(HashMap::empty(0), |i, mp| mp.insert(i, i * 3));
+    let mp = range(0, count).filter(|i| i % 3 == 0).fold(mp, |i, mp| mp.erase(i));
+    let erased_count = range(0, count).filter(|i| i % 3 == 0).to_array.@size;
+    assert_eq(|_|"size after erasing every third key", mp.@size, count - erased_count);;
+    _assert_all("every surviving key is still reachable", count, |i|
+        mp.find(i) == (if i % 3 == 0 { Option::none() } else { Option::some(i * 3) })
+    );;
+    pure()
+);
+
+// A map holding nothing answers for every key and lists nothing.
+test_empty_map : IO ();
+test_empty_map = (
+    let mp : HashMap I64 I64 = HashMap::empty(0);
+    assert_eq(|_|"size of an empty map", mp.@size, 0);;
+    assert_eq(|_|"find in an empty map", mp.find(0), Option::none());;
+    assert_eq(|_|"contains_key in an empty map", mp.contains_key(0), false);;
+    assert_eq(|_|"to_iter of an empty map", mp.HashMap::to_iter.to_array.@size, 0);;
+    let mp = mp.erase(0);
+    assert_eq(|_|"size after erasing from an empty map", mp.@size, 0);;
+    assert_eq(|_|"find after erasing from an empty map", mp.find(0), Option::none());;
+    pure()
+);
+
+// A key whose hash the test decides, so that keys can be made to collide with one another.
+type TestKey = unbox struct { id : I64, hash_of : U64 };
+
+// Two `TestKey` values are equal when their `id` fields are equal, so that keys carrying one hash
+// are still separate keys.
+impl TestKey : Eq {
+    eq = |lhs, rhs| lhs.@id == rhs.@id;
+}
+
+// The hash of a `TestKey` is the `hash_of` field the test gave it.
+impl TestKey : Hash {
+    hash = |k| k.@hash_of;
+}
+
+// Two keys are one key only when they are equal, so keys whose hashes are equal are separate
+// entries, each holding its own value and each erasable on its own.
+test_colliding_hashes : IO ();
+test_colliding_hashes = (
+    let count = 100;
+    // Every key hashes to one of four values, so most pairs of keys collide.
+    let key = |i| TestKey { id : i, hash_of : (i % 4).u64 };
+    let mp = range(0, count).fold(HashMap::empty(0), |i, mp| mp.insert(key(i), i * 2));
+    assert_eq(|_|"every key is its own entry", mp.@size, count);;
+    _assert_all("every key reads back its own value", count, |i|
+        mp.find(key(i)) == Option::some(i * 2)
+    );;
+    let mp = range(0, count).filter(|i| i % 2 == 0).fold(mp, |i, mp| mp.erase(key(i)));
+    assert_eq(|_|"size after erasing half the keys", mp.@size, count / 2);;
+    _assert_all("a key sharing the hash of an erased key is still reachable", count, |i|
+        mp.find(key(i)) == (if i % 2 == 0 { Option::none() } else { Option::some(i * 2) })
+    );;
+    pure()
+);
+
+// A map holds as many elements as its capacity says before it grows, and it keeps them all when it
+// does grow.
+test_capacity : IO ();
+test_capacity = (
+    let mp : HashMap I64 I64 = HashMap::empty(100);
+    let cap = mp.@capacity;
+    assert_eq(|_|"empty reserves at least the capacity asked for", cap >= 100, true);;
+    let mp = range(0, cap).fold(mp, |i, mp| mp.insert(i, i));
+    assert_eq(|_|"the map holds capacity elements", mp.@size, cap);;
+    assert_eq(|_|"holding capacity elements does not grow the map", mp.@capacity, cap);;
+    let mp = mp.insert(cap, cap);
+    assert_eq(|_|"one element past the capacity grows the map", mp.@capacity > cap, true);;
+    _assert_all("every element survives the growth", cap + 1, |i| mp.find(i) == Option::some(i));;
+    pure()
+);
+
+// `reserve` raises the capacity and keeps every element; asked for a capacity the map already has,
+// it leaves the map as it is.
+test_reserve : IO ();
+test_reserve = (
+    let count = 50;
+    let mp = range(0, count).fold(HashMap::empty(0), |i, mp| mp.insert(i, i * 7));
+    let mp = mp.reserve(1000);
+    assert_eq(|_|"reserve gives at least the capacity asked for", mp.@capacity >= 1000, true);;
+    assert_eq(|_|"reserve keeps the size", mp.@size, count);;
+    _assert_all("reserve keeps every element", count, |i| mp.find(i) == Option::some(i * 7));;
+    let cap = mp.@capacity;
+    let mp = mp.reserve(0);
+    assert_eq(|_|"a capacity the map already has keeps the capacity", mp.@capacity, cap);;
+    assert_eq(|_|"a capacity the map already has keeps the size", mp.@size, count);;
+    _assert_all("a capacity the map already has keeps every element", count, |i|
+        mp.find(i) == Option::some(i * 7)
+    );;
+    pure()
+);
+
+// `find_or` and the deprecated names report what the map holds.
+test_find_or_and_deprecated_names : IO ();
+test_find_or_and_deprecated_names = (
+    let mp = HashMap::empty(0).insert(1, 10).insert(2, 20);
+    assert_eq(|_|"find_or on a key the map holds", mp.find_or(1, -1), 10);;
+    assert_eq(|_|"find_or on a key the map does not hold", mp.find_or(3, -1), -1);;
+    assert_eq(|_|"get_size", mp.get_size, mp.@size);;
+    assert_eq(|_|"get_capacity", mp.get_capacity, mp.@capacity);;
     pure()
 );
