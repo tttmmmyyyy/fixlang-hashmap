@@ -105,7 +105,7 @@ _place = |entry, mp| (
 _slots_for : I64 -> I64;
 _slots_for = |max_size| (
     loop(4, |slot_count|
-        if HashMap::_capacity_of(slot_count) >= max_size { break $ slot_count }
+        if _capacity_of(slot_count) >= max_size { break $ slot_count }
         else { continue $ slot_count * 2 }
     )
 );
@@ -133,7 +133,7 @@ contains_key = |k, mp| mp.@_slots._find_slot(k.hash, k).@1;
 // - `capacity` : Initial capacity of the HashMap.
 empty : I64 -> HashMap k v;
 empty = |max_size| (
-    HashMap { _slots : Array::fill(HashMap::_slots_for(max_size), Option::none()), _size : 0 }
+    HashMap { _slots : Array::fill(_slots_for(max_size), Option::none()), _size : 0 }
 );
 
 // Erases an element from a HashMap.
@@ -145,7 +145,7 @@ erase : [k : HashKey] k -> HashMap k v -> HashMap k v;
 erase = |k, mp| (
     let (slot_idx, found) = mp.@_slots._find_slot(k.hash, k);
     if found {
-        mp.mod__slots(HashMap::_erase_slot(slot_idx)).mod__size(Add::add(-1))
+        mp.mod__slots(_erase_slot(slot_idx)).mod__size(Add::add(-1))
     } else { mp }
 );
 
@@ -176,7 +176,7 @@ find_or = |key, def, mp| mp.find(key).as_some_or(def);
 // # Parameters
 // - `mp` : HashMap to get capacity of.
 @capacity : HashMap k v -> I64;
-@capacity = |mp| HashMap::_capacity_of(mp.@_slots.@size);
+@capacity = |mp| _capacity_of(mp.@_slots.@size);
 
 // Gets size (number of elements) of a HashMap.
 //
