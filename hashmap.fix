@@ -26,20 +26,20 @@ type HashMap k v = unbox struct { _slots : Array (Option ((U64, k), v)), _size :
 // third of its slots are still free.
 //
 // # Parameters
-// - `slots` : Number of slots the table has.
+// - `slot_count` : Number of slots the table has.
 _capacity_of : I64 -> I64;
-_capacity_of = |slots| slots - slots / 3;
+_capacity_of = |slot_count| slot_count - slot_count / 3;
 
 // Empties the slot at an index, and closes the walk that slot interrupted: the first entry after it
 // whose own walk passes through it moves into it, and the slot that entry leaves is emptied in turn.
 //
 // # Parameters
-// - `at` : Index of the slot to empty.
+// - `slot_idx` : Index of the slot to empty.
 // - `slots` : Slots to erase from.
 _erase_slot : I64 -> Array (Option ((U64, k), v)) -> Array (Option ((U64, k), v));
-_erase_slot = |at, slots| (
+_erase_slot = |slot_idx, slots| (
     let mask = slots.@size - 1;
-    loop((slots, at, (at + 1).bit_and(mask)), |(slots, hole, i)| (
+    loop((slots, slot_idx, (slot_idx + 1).bit_and(mask)), |(slots, hole, i)| (
         let slot = slots.@(i);
         if slot.is_none { break $ slots.set(hole, Option::none()) };
         let entry = slot.as_some;
@@ -104,8 +104,9 @@ _place = |entry, mp| (
 // - `max_size` : Number of elements the table is to hold.
 _slots_for : I64 -> I64;
 _slots_for = |max_size| (
-    loop(4, |slots|
-        if HashMap::_capacity_of(slots) >= max_size { break $ slots } else { continue $ slots * 2 }
+    loop(4, |slot_count|
+        if HashMap::_capacity_of(slot_count) >= max_size { break $ slot_count }
+        else { continue $ slot_count * 2 }
     )
 );
 

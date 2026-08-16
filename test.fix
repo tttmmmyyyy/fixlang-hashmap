@@ -105,11 +105,11 @@ _reference_find = |k, reference| reference.find_by(|kv| kv.@0 == k).map(|i| refe
 test_against_reference : IO ();
 test_against_reference = (
     // The keys come from a range small enough that keys land on one another over and over.
-    let key_space = 256;
+    let key_count = 256;
     let (mp, reference, _) = range(0, 4000).fold(
         (HashMap::empty(0), Array::empty(0), 12345_U64), |step, (mp, reference, rng)|
         let rng = _next(rng);
-        let k = rng.bit_and(key_space.u64 - 1_U64).i64;
+        let k = rng.bit_and(key_count.u64 - 1_U64).i64;
         let rng = _next(rng);
         if rng.bit_and(3_U64) == 0_U64 {
             (mp.erase(k), reference._reference_erase(k), rng)
@@ -117,7 +117,7 @@ test_against_reference = (
         (mp.insert(k, step), reference._reference_insert(k, step), rng)
     );
     assert_eq(|_|"size", mp.@size, reference.@size);;
-    _assert_all("every key reads the same", key_space, |k|
+    _assert_all("every key reads the same", key_count, |k|
         mp.find(k) == reference._reference_find(k)
     );;
     let listed = mp.HashMap::to_iter.to_array.sort_by(|(lhs, rhs)| lhs.@0 < rhs.@0);
@@ -132,8 +132,8 @@ test_erase_keeps_keys_reachable = (
     let count = 200;
     let mp = range(0, count).fold(HashMap::empty(0), |i, mp| mp.insert(i, i * 3));
     let mp = range(0, count).filter(|i| i % 3 == 0).fold(mp, |i, mp| mp.erase(i));
-    let erased = range(0, count).filter(|i| i % 3 == 0).to_array.@size;
-    assert_eq(|_|"size after erasing every third key", mp.@size, count - erased);;
+    let erased_count = range(0, count).filter(|i| i % 3 == 0).to_array.@size;
+    assert_eq(|_|"size after erasing every third key", mp.@size, count - erased_count);;
     _assert_all("every surviving key is still reachable", count, |i|
         mp.find(i) == (if i % 3 == 0 { Option::none() } else { Option::some(i * 3) })
     );;
@@ -158,7 +158,7 @@ test_empty_map = (
 type TestKey = unbox struct { id : I64, hash_of : U64 };
 
 impl TestKey : Eq {
-    eq = |a, b| a.@id == b.@id;
+    eq = |lhs, rhs| lhs.@id == rhs.@id;
 }
 
 impl TestKey : Hash {
