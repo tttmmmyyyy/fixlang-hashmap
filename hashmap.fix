@@ -5,7 +5,7 @@ import Std::{
     loop, Array, Bool, I64, Iterator, Option, U64, Add::add,
     Array::{fill, set, @, @size}, I64::bit_and, ToI64::i64,
     Iterator::{flat_map, fold, map, range, Item}, LoopState::{break, continue},
-    Option::{as_some, as_some_or, is_none, is_some, none, some, to_iter}, Tuple2::{@0, @1}
+    Option::{as_some, as_some_or, is_none, none, some, to_iter}, Tuple2::{@0, @1}
 };
 
 // A hash table, holding a value under each key.
@@ -78,8 +78,9 @@ _find_slot : [k : HashKey] U64 -> k -> Array (Option ((U64, k), v)) -> (I64, Boo
 _find_slot = |h, k, slots| (
     let mask = slots.@size - 1;
     loop(h.i64.bit_and(mask), |i| (
-        if slots.@(i).is_none { break $ (i, false) };
-        if slots.@(i).as_some.@0 == (h, k) { break $ (i, true) };
+        let slot = slots.@(i);
+        if slot.is_none { break $ (i, false) };
+        if slot.as_some.@0 == (h, k) { break $ (i, true) };
         continue $ (i + 1).bit_and(mask)
     ))
 );
