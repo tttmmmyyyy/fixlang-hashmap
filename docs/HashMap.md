@@ -73,24 +73,22 @@ Finds an element from a HashMap.
 
 Type: `[k : Hash::HashKey] k -> v -> HashMap::HashMap k v -> v`
 
-Finds an element from a HashMap. If the map doesn't contain the key, it returns the given default value.
+Finds an element from a HashMap, and returns the given default value when the key is absent.
 
 ##### Parameters
 
 - `k` : Key to search for.
-- `def` : Default value to return if the key is not found.
+- `def` : Value to return when the key is absent.
 - `mp` : HashMap to search in.
 
 #### get_capacity
 
 Type: `HashMap::HashMap k v -> Std::I64`
 
-(Deprecated) Renamed `HashMap::get_capacity` to `HashMap::@capacity` for brevity.
+(Deprecated) Use `HashMap::@capacity` instead. This name remains available for backward
+compatibility.
 
-The old name `HashMap::get_capacity` is now deprecated but will remain available
-for the foreseeable future to maintain backward compatibility.
-
-Gets capacity of a HashMap.
+Gets capacity of a HashMap: the number of elements it holds before it grows.
 
 ##### Parameters
 
@@ -100,9 +98,8 @@ Gets capacity of a HashMap.
 
 Type: `HashMap::HashMap k v -> Std::I64`
 
-(Deprecated) Renamed `HashMap::get_size` to `HashMap::@size` for brevity.
-The old name `HashMap::get_size` is now deprecated but will remain available
-for the foreseeable future to maintain backward compatibility.
+(Deprecated) Use `HashMap::@size` instead. This name remains available for backward
+compatibility.
 
 Gets size (number of elements) of a HashMap.
 
@@ -114,7 +111,8 @@ Gets size (number of elements) of a HashMap.
 
 Type: `[k : Hash::HashKey] k -> v -> HashMap::HashMap k v -> HashMap::HashMap k v`
 
-Inserts an element into a HashMap.
+Inserts an element into a HashMap. A key the map already holds takes the new value, and the
+size stays as it is.
 
 ##### Parameters
 

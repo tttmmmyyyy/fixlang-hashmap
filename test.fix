@@ -7,7 +7,7 @@ import HashMap::{
 };
 import Std::{
     Array, Bool, Eq, I64, IO, Option, String, U64, Array::{empty, find_by, push_back, set, sort_by, to_iter, @, @size},
-    Debug::assert_eq, Iterator::{filter, fold, range, to_array}, Monad::pure, 
+    Debug::{assert, assert_eq}, Iterator::{filter, fold, range, to_array}, Monad::pure,
     Functor::map, Option::{none, some}, ToI64::i64, ToString::to_string, ToU64::u64, Tuple2::{@0, @1}, 
     U64::{bit_and, bit_xor, shift_left, shift_right}
 };
@@ -38,7 +38,7 @@ test_basic = (
                     .insert(3, 3)
                     .insert(4, 4).erase(4)
                     .erase(5)
-                    // Do nothing for 6
+                    // 6 is a key the map never holds.
                     .insert(7, -1).insert(7, 7);
 
     assert_eq(|_|"case 0", mp.find(0), Option::some(0));;
@@ -50,20 +50,20 @@ test_basic = (
     assert_eq(|_|"case 6", mp.find(6), Option::none());;
     assert_eq(|_|"case 7", mp.find(7), Option::some(7));;
 
-    assert_eq(|_|"case 0.5", mp.contains_key(0), true);;
-    assert_eq(|_|"case 1.5", mp.contains_key(1), true);;
-    assert_eq(|_|"case 2.5", mp.contains_key(2), true);;
-    assert_eq(|_|"case 3.5", mp.contains_key(3), true);;
-    assert_eq(|_|"case 4.5", mp.contains_key(4), false);;
-    assert_eq(|_|"case 5.5", mp.contains_key(5), false);;
-    assert_eq(|_|"case 6.5", mp.contains_key(6), false);;
-    assert_eq(|_|"case 7.5", mp.contains_key(7), true);;
+    assert(|_|"case 0.5", mp.contains_key(0));;
+    assert(|_|"case 1.5", mp.contains_key(1));;
+    assert(|_|"case 2.5", mp.contains_key(2));;
+    assert(|_|"case 3.5", mp.contains_key(3));;
+    assert(|_|"case 4.5", !mp.contains_key(4));;
+    assert(|_|"case 5.5", !mp.contains_key(5));;
+    assert(|_|"case 6.5", !mp.contains_key(6));;
+    assert(|_|"case 7.5", mp.contains_key(7));;
 
     assert_eq(|_|"case size", mp.@size, 5);;
 
     let kvs = mp.HashMap::to_iter.to_array;
-    let kvs = kvs.sort_by(|(lhs, rhs)| lhs < rhs);
-    assert_eq(|_|"case to_iter", kvs.to_string, "[(0, 0), (1, 1), (2, 2), (3, 3), (7, 7)]");;
+    let sorted_kvs = kvs.sort_by(|(lhs, rhs)| lhs < rhs);
+    assert_eq(|_|"case to_iter", sorted_kvs.to_string, "[(0, 0), (1, 1), (2, 2), (3, 3), (7, 7)]");;
 
     pure()
 );
@@ -168,7 +168,7 @@ test_empty_map = (
     let mp : HashMap I64 I64 = HashMap::empty(0);
     assert_eq(|_|"size of an empty map", mp.@size, 0);;
     assert_eq(|_|"find in an empty map", mp.find(0), Option::none());;
-    assert_eq(|_|"contains_key in an empty map", mp.contains_key(0), false);;
+    assert(|_|"contains_key in an empty map", !mp.contains_key(0));;
     assert_eq(|_|"to_iter of an empty map", mp.HashMap::to_iter.to_array.@size, 0);;
     let mp = mp.erase(0);
     assert_eq(|_|"size after erasing from an empty map", mp.@size, 0);;
@@ -216,12 +216,12 @@ test_capacity : IO ();
 test_capacity = (
     let mp : HashMap I64 I64 = HashMap::empty(100);
     let cap = mp.@capacity;
-    assert_eq(|_|"empty reserves at least the capacity asked for", cap >= 100, true);;
+    assert(|_|"empty reserves at least the capacity asked for", cap >= 100);;
     let mp = range(0, cap).fold(mp, |i, mp| mp.insert(i, i));
     assert_eq(|_|"the map holds capacity elements", mp.@size, cap);;
     assert_eq(|_|"holding capacity elements does not grow the map", mp.@capacity, cap);;
     let mp = mp.insert(cap, cap);
-    assert_eq(|_|"one element past the capacity grows the map", mp.@capacity > cap, true);;
+    assert(|_|"one element past the capacity grows the map", mp.@capacity > cap);;
     _assert_all("every element survives the growth", cap + 1, |i| mp.find(i) == Option::some(i));;
     pure()
 );
@@ -233,7 +233,7 @@ test_reserve = (
     let count = 50;
     let mp = range(0, count).fold(HashMap::empty(0), |i, mp| mp.insert(i, i * 7));
     let mp = mp.reserve(1000);
-    assert_eq(|_|"reserve gives at least the capacity asked for", mp.@capacity >= 1000, true);;
+    assert(|_|"reserve gives at least the capacity asked for", mp.@capacity >= 1000);;
     assert_eq(|_|"reserve keeps the size", mp.@size, count);;
     _assert_all("reserve keeps every element", count, |i| mp.find(i) == Option::some(i * 7));;
     let cap = mp.@capacity;

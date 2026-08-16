@@ -164,14 +164,14 @@ find = |k, mp| (
     } else { Option::none() }
 );
 
-// Finds an element from a HashMap. If the map doesn't contain the key, it returns the given default value.
+// Finds an element from a HashMap, and returns the given default value when the key is absent.
 //
 // # Parameters
 // - `k` : Key to search for.
-// - `def` : Default value to return if the key is not found.
+// - `def` : Value to return when the key is absent.
 // - `mp` : HashMap to search in.
 find_or : [k : HashKey] k -> v -> HashMap k v -> v;
-find_or = |key, def, mp| mp.find(key).as_some_or(def);
+find_or = |k, def, mp| mp.find(k).as_some_or(def);
 
 // Gets capacity of a HashMap: the number of elements it holds before it grows.
 //
@@ -187,21 +187,18 @@ find_or = |key, def, mp| mp.find(key).as_some_or(def);
 @size : HashMap k v -> I64;
 @size = |mp| mp.@_size;
 
-// (Deprecated) Renamed `HashMap::get_capacity` to `HashMap::@capacity` for brevity.
+// (Deprecated) Use `HashMap::@capacity` instead. This name remains available for backward
+// compatibility.
 //
-// The old name `HashMap::get_capacity` is now deprecated but will remain available
-// for the foreseeable future to maintain backward compatibility.
-//
-// Gets capacity of a HashMap.
+// Gets capacity of a HashMap: the number of elements it holds before it grows.
 //
 // # Parameters
 // - `mp` : HashMap to get capacity of.
 get_capacity : HashMap k v -> I64;
 get_capacity = @capacity;
 
-// (Deprecated) Renamed `HashMap::get_size` to `HashMap::@size` for brevity.
-// The old name `HashMap::get_size` is now deprecated but will remain available
-// for the foreseeable future to maintain backward compatibility.
+// (Deprecated) Use `HashMap::@size` instead. This name remains available for backward
+// compatibility.
 //
 // Gets size (number of elements) of a HashMap.
 //
@@ -210,7 +207,8 @@ get_capacity = @capacity;
 get_size : HashMap k v -> I64;
 get_size = @size;
 
-// Inserts an element into a HashMap.
+// Inserts an element into a HashMap. A key the map already holds takes the new value, and the
+// size stays as it is.
 //
 // # Parameters
 // - `k` : Key of the element to insert.
