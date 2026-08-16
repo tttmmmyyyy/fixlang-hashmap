@@ -2,13 +2,17 @@ module Test;
 
 import HashMap::{contains_key, empty, erase, find, insert, to_iter, @size};
 import Std::{
-    IO, Array::sort_by, Debug::assert_eq, Iterator::to_array, Monad::pure, Option::{none, some}, 
-    ToString::to_string
+    Array, Bool, I64, IO, Option, U64, Array::{empty, find_by, push_back, set, sort_by, to_iter, @, @size}, 
+    Debug::assert_eq, Iterator::{filter, fold, range, to_array}, Monad::pure, 
+    Functor::map, Option::{none, some}, ToI64::i64, ToString::to_string, ToU64::u64, Tuple2::{@0, @1}, 
+    U64::{bit_and, bit_xor, shift_left, shift_right}
 };
 
 test : IO ();
 test = (
     test_basic;;
+    test_against_reference;;
+    test_erase_keeps_keys_reachable;;
     pure()
 );
 
@@ -45,9 +49,74 @@ test_basic = (
 
     assert_eq(|_|"case size", mp.@size, 5);;
 
-    let kvs = mp.to_iter.to_array;
+    let kvs = mp.HashMap::to_iter.to_array;
     let kvs = kvs.sort_by(|(lhs, rhs)| lhs < rhs);
     assert_eq(|_|"case to_iter", kvs.to_string, "[(0, 0), (1, 1), (2, 2), (3, 3), (7, 7)]");;
 
+    pure()
+);
+
+// A pseudo-random sequence, which decides the order the operations below come in.
+_next : U64 -> U64;
+_next = |x| (
+    let x = x.bit_xor(x.shift_left(13_U64));
+    let x = x.bit_xor(x.shift_right(7_U64));
+    x.bit_xor(x.shift_left(17_U64))
+);
+
+// The map an array of pairs holds, which the HashMap is checked against.
+_reference_insert : I64 -> I64 -> Array (I64, I64) -> Array (I64, I64);
+_reference_insert = |k, v, reference| (
+    match reference.find_by(|kv| kv.@0 == k) {
+        some(i) => reference.set(i, (k, v)),
+        none() => reference.push_back((k, v))
+    }
+);
+
+_reference_erase : I64 -> Array (I64, I64) -> Array (I64, I64);
+_reference_erase = |k, reference| reference.Array::to_iter.filter(|kv| kv.@0 != k).to_array;
+
+_reference_find : I64 -> Array (I64, I64) -> Option I64;
+_reference_find = |k, reference| reference.find_by(|kv| kv.@0 == k).map(|i| reference.@(i).@1);
+
+// Runs a mixed stream of insertions, updates and deletions through both a HashMap and an array of
+// pairs holding the same map, and asks both for every key.
+test_against_reference : IO ();
+test_against_reference = (
+    // The keys come from a range small enough that keys land on one another over and over.
+    let key_space = 256;
+    let (mp, reference, _) = range(0, 4000).fold(
+        (HashMap::empty(0), Array::empty(0), 12345_U64), |step, (mp, reference, rng)|
+        let rng = _next(rng);
+        let k = rng.bit_and(key_space.u64 - 1_U64).i64;
+        let rng = _next(rng);
+        if rng.bit_and(3_U64) == 0_U64 {
+            (mp.erase(k), reference._reference_erase(k), rng)
+        };
+        (mp.insert(k, step), reference._reference_insert(k, step), rng)
+    );
+    assert_eq(|_|"size", mp.@size, reference.@size);;
+    let differing = range(0, key_space).filter(|k|
+        mp.find(k) != reference._reference_find(k)
+    ).to_array;
+    assert_eq(|_|"every key reads the same", differing.@size, 0);;
+    let listed = mp.HashMap::to_iter.to_array.sort_by(|(lhs, rhs)| lhs.@0 < rhs.@0);
+    let expected = reference.sort_by(|(lhs, rhs)| lhs.@0 < rhs.@0);
+    assert_eq(|_|"to_iter lists the entries", listed, expected);;
+    pure()
+);
+
+// Erasing a key another key was stored past has to leave that other key where a search finds it.
+test_erase_keeps_keys_reachable : IO ();
+test_erase_keeps_keys_reachable = (
+    let count = 200;
+    let mp = range(0, count).fold(HashMap::empty(0), |i, mp| mp.insert(i, i * 3));
+    let mp = range(0, count).filter(|i| i % 3 == 0).fold(mp, |i, mp| mp.erase(i));
+    let erased = range(0, count).filter(|i| i % 3 == 0).to_array.@size;
+    assert_eq(|_|"size after erasing every third key", mp.@size, count - erased);;
+    let differing = range(0, count).filter(|i|
+        mp.find(i) != (if i % 3 == 0 { Option::none() } else { Option::some(i * 3) })
+    ).to_array;
+    assert_eq(|_|"every surviving key is still reachable", differing.@size, 0);;
     pure()
 );

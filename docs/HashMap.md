@@ -1,6 +1,6 @@
 # HashMap
 
-Defined in hashmap@2.0.1
+Defined in hashmap@2.1.0
 
 ## Values
 
@@ -10,7 +10,7 @@ Defined in hashmap@2.0.1
 
 Type: `HashMap::HashMap k v -> Std::I64`
 
-Gets capacity of a HashMap.
+Gets capacity of a HashMap: the number of elements it holds before it grows.
 
 ##### Parameters
 
@@ -124,7 +124,7 @@ Inserts an element into a HashMap.
 
 #### reserve
 
-Type: `[k : Hash::HashKey] Std::I64 -> HashMap::HashMap k v -> HashMap::HashMap k v`
+Type: `Std::I64 -> HashMap::HashMap k v -> HashMap::HashMap k v`
 
 Reserves a HashMap so that it will not rehash until size exceeds the spacified value.
 
@@ -150,6 +150,17 @@ Converts a HashMap into an iterator.
 #### HashMap
 
 Defined as: `type HashMap k v = unbox struct { ...fields... }`
+
+A hash table, holding a value under each key.
+
+The entries lie directly in one array, a free slot holding `none`. An entry whose slot is taken
+goes into the next free slot after it, and a lookup starts at the slot the hash names and walks
+forward until it meets the entry or a free slot. A third of the slots are kept free for those
+walks to end at.
+
+An entry carries the hash of its key beside the key, so a lookup rules a slot out by comparing
+two 64-bit words, and both a deletion and a rehash find the slot an entry belongs in without
+hashing its key again.
 
 ## Traits and aliases
 
