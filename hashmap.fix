@@ -11,27 +11,28 @@ import Std::{
 // A hash table, holding a value under each key.
 //
 // The entries lie directly in one array, a free slot holding `none`. An entry whose slot is taken
-// goes into the next free slot after it, and a lookup starts at the slot the hash names and walks
-// forward until it meets the entry or a free slot. A third of the slots are kept free for those
-// walks to end at.
+// goes into the next free slot after it, and a lookup starts at the slot the hash names and steps
+// forward until it meets the entry or a free slot. A third of the slots are kept free, so that a
+// lookup soon meets one.
 //
 // An entry carries the hash of its key beside the key, so a lookup rules a slot out by comparing
 // two 64-bit words, and both a deletion and a rehash find the slot an entry belongs in without
 // hashing its key again.
 type HashMap k v = unbox struct { _slots : Array (Option ((U64, k), v)), _size : I64 };
 
-// The number of elements a table of a number of slots holds before it grows.
+// The number of elements a table with `slot_count` slots holds before it grows.
 //
-// A walk ends at a free slot, and the walks lengthen as the table fills, so the table grows while a
-// third of its slots are still free.
+// A lookup ends at a free slot, and lookups get longer as the table fills, so the table grows while
+// a third of its slots are still free.
 //
 // # Parameters
 // - `slot_count` : Number of slots the table has.
 _capacity_of : I64 -> I64;
 _capacity_of = |slot_count| slot_count - slot_count / 3;
 
-// Empties the slot at an index, and closes the walk that slot interrupted: the first entry after it
-// whose own walk passes through it moves into it, and the slot that entry leaves is emptied in turn.
+// Empties the slot at an index, and keeps the entries after it reachable: the first entry whose
+// lookup passes through the emptied slot moves into it, and the slot that entry leaves is emptied
+// in turn.
 //
 // # Parameters
 // - `slot_idx` : Index of the slot to empty.
@@ -44,8 +45,8 @@ _erase_slot = |slot_idx, slots| (
         if slot.is_none { break $ slots.set(hole, Option::none()) };
         let entry = slot.as_some;
         let home = entry.@0.@0.i64.bit_and(mask);
-        // The entry stays where it is when the walk from its home slot starts after the hole, since
-        // that walk then never passes through the hole.
+        // The entry stays where it is when its home slot lies after the hole, since a lookup for
+        // it then never passes through the hole.
         if (i - home).bit_and(mask) < (i - hole).bit_and(mask) {
             continue $ (slots, hole, (i + 1).bit_and(mask))
         };
@@ -53,10 +54,10 @@ _erase_slot = |slot_idx, slots| (
     ))
 );
 
-// Finds the free slot an entry goes into, in a table holding no entry with its key.
+// Finds the first free slot at or after the slot a hash names.
 //
 // # Parameters
-// - `h` : Hash of the key.
+// - `h` : Hash of the key of the entry to place.
 // - `slots` : Slots to search in.
 _find_free_slot : U64 -> Array (Option ((U64, k), v)) -> I64;
 _find_free_slot = |h, slots| (
@@ -68,7 +69,7 @@ _find_free_slot = |h, slots| (
 );
 
 // Finds the slot a key belongs in.
-// Returns pair of (index of the slot, whether the key is in it).
+// Returns a pair of (index of the slot, whether the key is already in it).
 //
 // # Parameters
 // - `h` : Hash of the key.
@@ -85,8 +86,8 @@ _find_slot = |h, k, slots| (
     ))
 );
 
-// Puts an entry into a HashMap holding no entry with its key, which is what lets it take the first
-// free slot of its walk without comparing any key.
+// Puts an entry into a HashMap that holds no entry with its key: the entry takes the first free
+// slot at or after the slot its hash names, and the size rises by one.
 //
 // # Parameters
 // - `entry` : Entry to place.
@@ -97,8 +98,8 @@ _place = |entry, mp| (
     mp.mod__slots(Array::set(slot_idx, Option::some(entry))).mod__size(Add::add(1))
 );
 
-// The number of slots a table needs to hold a number of elements. It is a power of two, so that
-// the slot a hash names is its low bits.
+// The number of slots a table needs to hold `max_size` elements. The result is a power of two, so
+// the low bits of a hash name a slot.
 //
 // # Parameters
 // - `max_size` : Number of elements the table is to hold.
@@ -110,7 +111,8 @@ _slots_for = |max_size| (
     )
 );
 
-// Converts a HashMap into an iterator over its entries.
+// Converts a HashMap into an iterator over its entries, each carrying the hash of its key beside
+// the key.
 //
 // # Parameters
 // - `mp` : HashMap to convert to an iterator.
@@ -119,7 +121,7 @@ _to_iter_entries = |mp| (
     Iterator::range(0, mp.@_slots.@size).flat_map(|slot_idx| mp.@_slots.@(slot_idx).to_iter)
 );
 
-// Checks whether a hashmap contains a key.
+// Checks whether a HashMap contains a key.
 //
 // # Parameters
 // - `k` : Key to search for.
@@ -127,10 +129,10 @@ _to_iter_entries = |mp| (
 contains_key : [k : HashKey] k -> HashMap k v -> Bool;
 contains_key = |k, mp| mp.@_slots._find_slot(k.hash, k).@1;
 
-// Creates an empty HashMap which is reserved so that it will not rehash until size exceeds the spacified value.
+// Creates an empty HashMap which is reserved so that it will not rehash until size exceeds the specified value.
 //
 // # Parameters
-// - `capacity` : Initial capacity of the HashMap.
+// - `capacity` : Number of elements the HashMap is to hold before it rehashes.
 empty : I64 -> HashMap k v;
 empty = |max_size| (
     HashMap { _slots : Array::fill(_slots_for(max_size), Option::none()), _size : 0 }
@@ -223,10 +225,10 @@ insert = |k, v, mp| (
     if found { mp } else { mp.mod__size(Add::add(1)) }
 );
 
-// Reserves a HashMap so that it will not rehash until size exceeds the spacified value.
+// Reserves a HashMap so that it will not rehash until size exceeds the specified value.
 //
 // # Parameters
-// - `capacity` : Capacity to reserve.
+// - `capacity` : Number of elements the HashMap is to hold before it rehashes.
 // - `mp` : HashMap to reserve.
 reserve : I64 -> HashMap k v -> HashMap k v;
 reserve = |max_size, mp| (
