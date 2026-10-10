@@ -1,3 +1,17 @@
+// Provides `HashMap k v`, a hash table that holds a value under each key. A key type is one that
+// implements `HashKey` of the `hash` library.
+//
+// `empty` creates a map, `insert` puts a value under a key, `find` looks a key up, and `erase`
+// removes it.
+//
+// ```fix
+// let mp = HashMap::empty(0).insert("one", 1).insert("two", 2).insert("one", 10);
+// assert_eq(|_|"", mp.find("one"), some(10));;
+// assert_eq(|_|"", mp.@size, 2);;
+// let mp = mp.erase("two");
+// assert_eq(|_|"", mp.find("two"), none());;
+// assert_eq(|_|"", mp.find_or("two", 0), 0)
+// ```
 module HashMap;
 
 import Hash::{HashKey, Hash::hash};
