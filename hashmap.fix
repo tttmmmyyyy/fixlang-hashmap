@@ -16,10 +16,11 @@ module HashMap;
 
 import Hash::{HashKey, Hash::hash};
 import Std::{
-    loop, Array, Bool, I64, Iterator, Option, U64, Add::add,
-    Array::{fill, set, @, @size}, I64::bit_and, ToI64::i64,
-    Iterator::{flat_map, fold, map, range, Item}, LoopState::{break, continue},
-    Option::{as_some, as_some_or, is_none, none, some, to_iter}, Tuple2::{@0, @1}
+    loop, undefined, Array, Bool, Functor, I64, Identity, Indexable, Iterator, Option, U64, Add::add,
+    Array::{act, fill, set, @, @size}, Functor::map, I64::bit_and, Identity::@data, ToI64::i64,
+    Indexable::{act_at_index, Elem, Index}, Iterator::{flat_map, fold, map, range, Item},
+    LoopState::{break, continue}, Option::{as_some, as_some_or, is_none, none, some, to_iter},
+    Tuple2::{@0, @1}
 };
 
 // A hash table, holding a value under each key.
@@ -66,6 +67,22 @@ _erase_slot = |slot_idx, slots| (
         };
         continue $ (slots.set(hole, Option::some(entry)), i, (i + 1).bit_and(mask))
     ))
+);
+
+// Acts on the value of the entry in a slot that holds one.
+//
+// The value reaches `f` unique when the map and the value are unique.
+//
+// # Parameters
+// - `slot_idx` : Index of the slot, which holds an entry.
+// - `f` : Functorial action to perform on the value.
+// - `mp` : HashMap to act on.
+_act_slot : [f : Functor] I64 -> (v -> f v) -> HashMap k v -> f (HashMap k v);
+_act_slot = |slot_idx, f, mp| (
+    mp.act__slots(Array::act(slot_idx, |slot| (
+        let (hk, v) = slot.as_some;
+        f(v).map(|v| some((hk, v)))
+    )))
 );
 
 // Finds the first free slot at or after the slot a hash names.
@@ -133,6 +150,24 @@ _slots_for = |max_size| (
 _to_iter_entries : [?it : Iterator, Item ?it = ((U64, k), v)] HashMap k v -> ?it;
 _to_iter_entries = |mp| (
     Iterator::range(0, mp.@_slots.@size).flat_map(|slot_idx| mp.@_slots.@(slot_idx).to_iter)
+);
+
+// Modifies the value under a key by a functorial action. When the key is absent, the action
+// acts on `def`, and its result goes in under the key.
+//
+// The value reaches `f` unique when the map and the value are unique, so `f` can update an array
+// it receives in place.
+//
+// # Parameters
+// - `k` : Key of the value to act on.
+// - `def` : Value to act on when the key is absent.
+// - `f` : Functorial action to perform on the value.
+// - `mp` : HashMap to act on.
+act_or : [k : HashKey, f : Functor] k -> v -> (v -> f v) -> HashMap k v -> f (HashMap k v);
+act_or = |k, def, f, mp| (
+    let (slot_idx, found) = mp.@_slots._find_slot(k.hash, k);
+    if found { mp._act_slot(slot_idx, f) };
+    f(def).map(|v| mp.insert(k, v))
 );
 
 // Checks whether a HashMap contains a key.
@@ -237,6 +272,27 @@ insert = |k, v, mp| (
     if found { mp } else { mp.mod__size(Add::add(1)) }
 );
 
+// Modifies the value under a key by a function. When the key is absent, the function applies to
+// `def`, and its result goes in under the key.
+//
+// The value reaches `f` unique when the map and the value are unique, so `f` can update an array
+// it receives in place.
+//
+// ```fix
+// let words = ["a", "b", "a"];
+// let counts = words.to_iter.fold(HashMap::empty(0), |w, mp| mp.mod_or(w, 0, add(1)));
+// assert_eq(|_|"", counts.find("a"), some(2));;
+// assert_eq(|_|"", counts.find("b"), some(1))
+// ```
+//
+// # Parameters
+// - `k` : Key of the value to modify.
+// - `def` : Value to modify when the key is absent.
+// - `f` : Function to apply to the value.
+// - `mp` : HashMap to modify.
+mod_or : [k : HashKey] k -> v -> (v -> v) -> HashMap k v -> HashMap k v;
+mod_or = |k, def, f, mp| mp.act_or(k, def, |v| Identity { data : f(v) }).@data;
+
 // Reserves a HashMap so that it will not rehash until size exceeds the specified value.
 //
 // # Parameters
@@ -254,3 +310,18 @@ reserve = |max_size, mp| (
 // - `mp` : HashMap to convert to an iterator.
 to_iter : [?it : Iterator, Item ?it = (k, v)] HashMap k v -> ?it;
 to_iter = |mp| mp._to_iter_entries.map(|((_, k), v)| (k, v));
+
+// The index syntax `mp[k]` reaches the value under the key `k`. Reaching a key the map does not
+// hold stops the program; `act_or` and `mod_or` put a value under an absent key.
+//
+// The value reaches the action unique when the map and the value are unique, so
+// `mp[k].imod(f)` can update an array under `k` in place.
+impl [k : HashKey] HashMap k v : Indexable {
+    type Elem (HashMap k v) = v;
+    type Index (HashMap k v) = k;
+    act_at_index = |k, f, mp| (
+        let (slot_idx, found) = mp.@_slots._find_slot(k.hash, k);
+        if !found { undefined("Key not found in HashMap.") };
+        mp._act_slot(slot_idx, f)
+    );
+}
