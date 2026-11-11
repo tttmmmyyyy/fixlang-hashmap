@@ -1,17 +1,21 @@
 # HashMap
 
-Defined in hashmap@2.1.0
+Defined in hashmap@2.2.0
 
 Provides `HashMap k v`, a hash table that holds a value under each key. A key type is one that
 implements `HashKey` of the `hash` library.
 
 `empty` creates a map, `insert` puts a value under a key, `find` looks a key up, and `erase`
-removes it.
+removes it. The index syntax `mp[k]` reaches the value under a key the map holds, and `mod_or`
+modifies the value under a key, putting one in when the key is absent.
 
 ```fix
 let mp = HashMap::empty(0).insert("one", 1).insert("two", 2).insert("one", 10);
 assert_eq(|_|"", mp.find("one"), some(10));;
 assert_eq(|_|"", mp.@size, 2);;
+let mp = mp["one"].imod(add(5)).mod_or("three", 0, add(3));
+assert_eq(|_|"", mp["one"].iget, 15);;
+assert_eq(|_|"", mp.find("three"), some(3));;
 let mp = mp.erase("two");
 assert_eq(|_|"", mp.find("two"), none());;
 assert_eq(|_|"", mp.find_or("two", 0), 0)
@@ -40,6 +44,23 @@ Gets size (number of elements) of a HashMap.
 ##### Parameters
 
 - `mp` : HashMap to get size of.
+
+#### act_or
+
+Type: `[f : Std::Functor, k : Hash::HashKey] k -> v -> (v -> f v) -> HashMap::HashMap k v -> f (HashMap::HashMap k v)`
+
+Modifies the value under a key by a functorial action. When the key is absent, the action
+acts on `def`, and its result goes in under the key.
+
+The value reaches `f` unique when the map and the value are unique, so `f` can update an array
+it receives in place.
+
+##### Parameters
+
+- `k` : Key of the value to act on.
+- `def` : Value to act on when the key is absent.
+- `f` : Functorial action to perform on the value.
+- `mp` : HashMap to act on.
 
 #### contains_key
 
@@ -135,6 +156,30 @@ size stays as it is.
 - `v` : Value of the element to insert.
 - `mp` : HashMap to insert into.
 
+#### mod_or
+
+Type: `[k : Hash::HashKey] k -> v -> (v -> v) -> HashMap::HashMap k v -> HashMap::HashMap k v`
+
+Modifies the value under a key by a function. When the key is absent, the function applies to
+`def`, and its result goes in under the key.
+
+The value reaches `f` unique when the map and the value are unique, so `f` can update an array
+it receives in place.
+
+```fix
+let words = ["a", "b", "a"];
+let counts = words.to_iter.fold(HashMap::empty(0), |w, mp| mp.mod_or(w, 0, add(1)));
+assert_eq(|_|"", counts.find("a"), some(2));;
+assert_eq(|_|"", counts.find("b"), some(1))
+```
+
+##### Parameters
+
+- `k` : Key of the value to modify.
+- `def` : Value to modify when the key is absent.
+- `f` : Function to apply to the value.
+- `mp` : HashMap to modify.
+
 #### reserve
 
 Type: `Std::I64 -> HashMap::HashMap k v -> HashMap::HashMap k v`
@@ -178,3 +223,11 @@ hashing its key again.
 ## Traits and aliases
 
 ## Trait implementations
+
+### impl `[k : Hash::HashKey] HashMap::HashMap k v : Std::Indexable`
+
+The index syntax `mp[k]` reaches the value under the key `k`. Reaching a key the map does not
+hold stops the program; `act_or` and `mod_or` put a value under an absent key.
+
+The value reaches the action unique when the map and the value are unique, so
+`mp[k].imod(f)` can update an array under `k` in place.
