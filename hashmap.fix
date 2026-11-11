@@ -2,12 +2,16 @@
 // implements `HashKey` of the `hash` library.
 //
 // `empty` creates a map, `insert` puts a value under a key, `find` looks a key up, and `erase`
-// removes it.
+// removes it. The index syntax `mp[k]` reaches the value under a key the map holds, and `mod_or`
+// modifies the value under a key, putting one in when the key is absent.
 //
 // ```fix
 // let mp = HashMap::empty(0).insert("one", 1).insert("two", 2).insert("one", 10);
 // assert_eq(|_|"", mp.find("one"), some(10));;
 // assert_eq(|_|"", mp.@size, 2);;
+// let mp = mp["one"].imod(add(5)).mod_or("three", 0, add(3));
+// assert_eq(|_|"", mp["one"].iget, 15);;
+// assert_eq(|_|"", mp.find("three"), some(3));;
 // let mp = mp.erase("two");
 // assert_eq(|_|"", mp.find("two"), none());;
 // assert_eq(|_|"", mp.find_or("two", 0), 0)
